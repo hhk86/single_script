@@ -39,12 +39,12 @@ if __name__ == "__main__":
     # Delete money fund.
     # Manually delete the last row of future.xls
     # Delete and adjust the inverse trade.
-    spot_df = pd.read_csv("spot_305_1101.csv", encoding="gbk")
+    spot_df = pd.read_csv("spot_305_1104.csv", encoding="gbk")
     spot_df = spot_df[["证券代码", "成交时间","成交价格", "成交数量", "成交结果"]]
-    spot_df["成交数量"] = spot_df["成交数量"].apply(lambda s: int(s.replace(',', '')))
+    spot_df["成交数量"] = spot_df["成交数量"].apply(lambda s: int(str(s).replace(',', '')))
     spot_df["证券代码"] = spot_df["证券代码"].astype(str)
     spot_df["证券代码"] = spot_df["证券代码"].apply(lambda s: "SH" + s if s.startswith('6') and len(s) == 6 else "SZ" + s.zfill(6))
-    future_df = pd.read_excel("future_83023055_1101.xls", encoding="gbk")
+    future_df = pd.read_excel("future_83023055_1104.xls", encoding="gbk")
     future_df = future_df[['成交时间','成交价格','成交数量','委托方向']]
 
 
@@ -54,7 +54,7 @@ if __name__ == "__main__":
         future_price = tsl.getCurrentPrice("IC1911")
     future_df["current_price"] = future_price
     future_df["pnl"] = (future_df["current_price"].sub(future_df["成交价格"])).mul(future_df["成交数量"])
-    future_pnl = - future_df["pnl"].sum() * 200
+    future_pnl = future_df["pnl"].sum() * 200
     future_net_num = future_df["成交数量"].sum()
 
     # Make spot_df
@@ -73,11 +73,15 @@ if __name__ == "__main__":
     spot_pnl = spot_df["pnl"].sum()
 
     # Calculate average base at opening
-    pnl = spot_pnl + future_pnl
-    base_change = pnl / future_net_num / 200
+    # pnl = spot_pnl - future_pnl # 建仓
+    # base_change = - pnl / future_net_num / 200 # 建仓
+    pnl = future_pnl - spot_pnl # 平仓
+    base_change = pnl / future_net_num / 200   # 平仓
     with TsTickData() as tsl:
         index_price = tsl.getCurrentPrice("SH000905")
     current_base = future_price - index_price
-    openBase = current_base - base_change
+    openBase = round(current_base - base_change, 2)
+    # print(spot_pnl, future_pnl)
+    # print(base_change)
     print(openBase)
 
